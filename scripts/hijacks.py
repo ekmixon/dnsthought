@@ -38,10 +38,10 @@ import subprocess
 import sys
 import cPickle
 
-asns_by_ip       = dict()
-hijacks_by_probe = dict()
-hj_res_by_asn    = dict()
-hj_ips_by_asn    = dict()
+asns_by_ip = {}
+hijacks_by_probe = {}
+hj_res_by_asn = {}
+hj_ips_by_asn = {}
 
 def process_hijack(dt_str, prb_id, res_ip, hjs):
 	global hijacks
@@ -57,14 +57,14 @@ def process_hijack(dt_str, prb_id, res_ip, hjs):
 			continue
 
 		if prb_id not in hijacks_by_probe:
-			hijacks_by_probe[prb_id] = dict()
+			hijacks_by_probe[prb_id] = {}
 		if res_ip not in hijacks_by_probe[prb_id]:
-			hijacks_by_probe[prb_id][res_ip] = dict()
+			hijacks_by_probe[prb_id][res_ip] = {}
 		hijacks_by_probe[prb_id][res_ip][asn] = dt
 
 		if asn not in hj_res_by_asn:
-			hj_res_by_asn[asn] = dict()
-			hj_ips_by_asn[asn] = dict()
+			hj_res_by_asn[asn] = {}
+			hj_ips_by_asn[asn] = {}
 		hj_res_by_asn[asn][(prb_id, res_ip)] = dt
 		hj_ips_by_asn[asn][hj] = dt
 

@@ -36,18 +36,23 @@ import requests
 import cPickle
 import sys
 
-asns = dict()
+asns = {}
 for page in ( 'list-of-autonomous-system-numbers'
             , 'list-of-autonomous-system-numbers-2'
 	    , '4-byte-asn-names-list' ):
-	r = requests.get('http://www.bgplookingglass.com/' + page)
+	r = requests.get(f'http://www.bgplookingglass.com/{page}')
 	if r.status_code != 200:
-		print('Could not fetch %s' % page)
+		print(f'Could not fetch {page}')
 		sys.exit(1)
-	asns.update(dict([ (lambda x: (x[0], (x[1], ' '.join(x[2:]).lstrip('- '))))(x.split())
-	                   for x in r.content.split('<pre>')[1]
-	                                     .split('</pre>')[0]
-	                                     .split('<br />')]))
+	asns |= dict(
+		[
+			(lambda x: (x[0], (x[1], ' '.join(x[2:]).lstrip('- '))))(x.split())
+			for x in r.content.split('<pre>')[1]
+			.split('</pre>')[0]
+			.split('<br />')
+		]
+	)
+
 
 with file(('/'.join(sys.argv[0].split('/')[:-1] + ['']) if '/' in sys.argv[0] else '')
          + 'asns.cPickle', 'w') as f:
