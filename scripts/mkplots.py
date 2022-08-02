@@ -62,7 +62,7 @@ best_colors = [ ('#7293cb', '#396ab1')
 	      , ('#ccc210', '#948b3d') ]
 best_line_colors = [ x[1] for x in best_colors ]
 best_bar_colors = [ x[0] for x in best_colors ] + best_line_colors
-color_tables = dict()
+color_tables = {}
 
 def lookup_color(table, label, prev_color):
 	global color_tables
@@ -71,7 +71,7 @@ def lookup_color(table, label, prev_color):
 		return '#999999'
 
 	if table not in color_tables:
-		color_tables[table] = dict()
+		color_tables[table] = {}
 
 	if label in color_tables[table]:
 		return color_tables[table][label]
@@ -178,7 +178,7 @@ class Nav(object):
 	def __init__(self, path):
 		es = path.split('/')
 		self.path = path
-		self.nav = list()
+		self.nav = []
 		i = 0
 		for e in es[::-1]:
 			nav_e = get_nav_e(e)
@@ -224,24 +224,17 @@ class Nav(object):
 		new_nav = list(self.nav)
 		new_nav.remove(nav_e)
 		href = os.path.relpath(mkpath(new_nav), mkpath(self.nav))
-		descr = '<b>Clear</b> %s' % nav_e[1]
+		descr = f'<b>Clear</b> {nav_e[1]}'
 		return href, descr
 
 	def add_link(self, nav_e):
-		if True: # Single layer nav switch
-			new_nav = list()
-		elif nav_e[0] == 0:
-			new_nav = [e for e in self.nav if e[0] != 0]
-		else:
-			new_nav = [e for e in self.nav if e[0] == 0]
-
-		new_nav.append(nav_e)
+		new_nav = [nav_e]
 		new_nav.sort()
 		href = os.path.relpath(mkpath(new_nav), mkpath(self.nav))
 		return href, nav_e[1]
 
 	def make_prop_links(self, props):
-		links = list()
+		links = []
 		for prop, label in props:
 			if prop.startswith('nxhj_'):
 				return []
@@ -255,8 +248,7 @@ class Nav(object):
 
 
 	def print_prop_links(self, f, props):
-		links = self.make_prop_links(props)
-		if links:
+		if links := self.make_prop_links(props):
 			f.write('<br />Resolvers')
 			if 'AS' not in props[0][0]:
 				f.write(' that')
@@ -288,7 +280,7 @@ class Index(object):
 		quick_jump = '<ul class="main">'
 		for title, anchor, plots, prop in self.plots:
 			quick_jump += '<li><a href="#%s">%s</a></li>' \
-			            % (anchor, title)
+				            % (anchor, title)
 		quick_jump += '</ul>'
 
 		nav = Nav(self.path)
@@ -321,14 +313,13 @@ class Index(object):
 					f.write(''.join(['<img src="%s">' % pfn for pfn in plots[4:]]))
 				f.write('</table>')
 			elif len(plots) > 1:
-				f.write('<table><tr><th>on %s</th></tr>'
-				       % dt.strftime('%Y-%m-%d %H:%M'))
+				f.write(f"<table><tr><th>on {dt.strftime('%Y-%m-%d %H:%M')}</th></tr>")
 				f.write('<tr><td>with %d resolvers</td></tr>'
 				       % n_res)
 				f.write('<tr><td><img src="%s"></td></tr>'
 				       % plots[1] )
 				f.write('</table>')
-			
+
 			if prop is not None:
 				prop.save(f)
 			nav.print_prop_links(f, zip(prop.cols(), prop.labs()))
@@ -371,7 +362,7 @@ class Prop(object):
 			xtra = 'No data<br />'
 
 		elif self.dt_ts[0] == self.dt_ts[-1]:
-			xtra = 'Data from %s<br />' % self.dt_ts[0].ctime()
+			xtra = f'Data from {self.dt_ts[0].ctime()}<br />'
 
 		ind.add_plots( self.title
 		             , self.col_name
@@ -437,15 +428,12 @@ class Prop(object):
 			colors += ['#CCCCCC']
 		if labels and labels[0].startswith('strict'):
 			labels = ['permissive resolvers'] + labels[1:]
-		i = 0
-		for label in labels:
+		for i, label in enumerate(labels):
 			try:
 				plot_patches.append(mpatches.Patch(color = colors[i]))
 			except IndexError:
 				if label.startswith('strict'):
 					plot_patches.append(mpatches.Patch(color = colors[0]))
-			i += 1
-
 		pct_labels = ['%s (%1.1f%%)' % (label, pct) for label, pct in zip(labels, [float(100*n) / float(sum(data)) for n in data])]
 
 		ax.legend(plot_patches[::-1], pct_labels[::-1]
@@ -455,7 +443,7 @@ class Prop(object):
 		fn_split = fn.split('.')
 		fn_ext   = fn_split[-1]
 		fn_base  = '.'.join(fn_split[:-1])
-		pie_fn = fn_base + '_pie.' + fn_ext
+		pie_fn = f'{fn_base}_pie.' + fn_ext
 		pp.savefig(pie_fn, transparent = True, bbox_inches='tight')
 		pp.close()
 		self.register_plot(pie_fn)
@@ -490,23 +478,23 @@ class Prop(object):
 
 		self.dt_ts = dt_ts
 		self.plot_more(ax)
-		
+
 		colors = [ mpatches.Patch(color = c) for c in self.colors()]
 		labels = self.labs()
 		if data_ts_prbs:
-			i = 0
-			for col_prbs in data_ts_prbs:
+			for i, col_prbs in enumerate(data_ts_prbs):
 				color = darken(self.colors()[i])
 				colors.append(mlines.Line2D([], [], color = color))
-				if labels[i].startswith('do') or \
-				   labels[i].startswith('can') or \
-				   labels[i].startswith('have'):
-					label = 'probes that ' + labels[i]
-				else:
-				 	label = 'probes with ' + labels[i]
+				label = (
+					'probes that ' + labels[i]
+					if labels[i].startswith('do')
+					or labels[i].startswith('can')
+					or labels[i].startswith('have')
+					else 'probes with ' + labels[i]
+				)
+
 				labels.append(label)
 				ax.plot(dt_ts, col_prbs, color = color)
-				i += 1
 		if labels and labels[0].startswith('strict'):
 			colors.insert(0, mpatches.Patch(color = '#CCCCCC'))
 			labels = ['permissive resolvers'] + labels[1:]
@@ -514,7 +502,7 @@ class Prop(object):
 			 , [label.decode('utf-8') for label in labels[::-1]]
 			 , ncol=1, loc='upper left')
 		ax.set_ylabel('Probe/resolver pairs')
-		
+
 		fig.autofmt_xdate(rotation=45)
 		pp.savefig(fn, transparent = True, bbox_inches='tight')
 		pp.close()
@@ -526,7 +514,7 @@ class Prop(object):
 	def plot(self, dt_ts, csv, ind):
 		data_ts = [csv[col].values for col in self.cols()]
 		for offset in range(len(dt_ts)):
-			if sum([ts[offset] for ts in data_ts]) > 0:
+			if sum(ts[offset] for ts in data_ts) > 0:
 				break;
 		try:
 			offset
@@ -567,12 +555,14 @@ class DNSSECProp(CanProp):
 class DNSKEYProp(DNSSECProp):
 	def __init__(self, col_name, lab_name):
 		super(DNSKEYProp, self).__init__(
-		    'DNSKEY Algorithm %s support' % lab_name, col_name, lab_name)
+			f'DNSKEY Algorithm {lab_name} support', col_name, lab_name
+		)
 
 class DSProp(DNSSECProp):
 	def __init__(self, col_name, lab_name):
 		super(DSProp, self).__init__(
-		    'DS Algorithm %s support' % lab_name, col_name, lab_name)
+			f'DS Algorithm {lab_name} support', col_name, lab_name
+		)
 
 class IntProp(Prop):
 	def __init__(self):
@@ -594,17 +584,27 @@ class TopASNs(Prop):
 	def __init__(self, asn_type):
 		self.asn_type = asn_type
 		self.asn_small_type = 'prb' if asn_type == 'probe' else \
-				      'res' if asn_type == 'resolver' else asn_type
+					      'res' if asn_type == 'resolver' else asn_type
 		self.labels = None
 		size = 10
 		super(TopASNs, self).__init__(
-		    ( 'Top %d %sASNs'
-		    % ( size
-		      , 'Probe ' if asn_type == 'probe' else
-		        'Resolver ' if asn_type == 'resolver' else
-		        'Authoritative ' if asn_type == 'auth' else 
-		        'NX domain rewriting' if asn_type == 'nxhj' else '' )),
-		    'top_%s_asns' % asn_type, 'Top ASNs')
+			'Top %d %sASNs'
+			% (
+				size,
+				'Probe '
+				if asn_type == 'probe'
+				else 'Resolver '
+				if asn_type == 'resolver'
+				else 'Authoritative '
+				if asn_type == 'auth'
+				else 'NX domain rewriting'
+				if asn_type == 'nxhj'
+				else '',
+			),
+			f'top_{asn_type}_asns',
+			'Top ASNs',
+		)
+
 		self.size = 10
 
 	def labs(self):
@@ -612,20 +612,15 @@ class TopASNs(Prop):
 	def pie_labs(self):
 		return self.pie_labels
 	def colors(self):
-		if self.labels:
-			colors = list()
-			prev_color = ''
-			for label in self.labels:
-				color = lookup_color('asn', label, prev_color)
-				colors.append(color)
-				prev_color = color
-			return colors
-		else:
+		if not self.labels:
 			return (best_bar_colors + best_bar_colors)
-		return [ '#CC9966', '#CC6699', '#99CC66', '#9966CC', '#66CC99', '#6699CC'
-		       , '#33CC99', '#3399CC', '#CC3399'#, '#CC9933', '#9933CC', '#99CC33'
-		       , '#999999'][:(len(self.labels)
-		                       if self.labels is not None else 999999)]
+		colors = []
+		prev_color = ''
+		for label in self.labels:
+			color = lookup_color('asn', label, prev_color)
+			colors.append(color)
+			prev_color = color
+		return colors
 	def plot(self, dt_ts, csv, ind):
 		offset = -1
 		n_resolvers = csv['# resolvers'].values
@@ -636,11 +631,11 @@ class TopASNs(Prop):
 		if offset < 0:
 			return '';
 
-		asn_totals = dict()
+		asn_totals = {}
 		bands = [ zip( csv['%s #%d total' % (self.asn_type, band)].values[offset:]
 		             , csv['%s #%d ASNs' % (self.asn_type, band)].values[offset:])
 		          for band in range(1,100) ]
-		rem   = csv['Remaining %s ASNs count' % self.asn_type].values[offset:]
+		rem = csv[f'Remaining {self.asn_type} ASNs count'].values[offset:]
 		bands += [zip(rem, ['rem'] * len(rem))]
 		for band in bands:
 			i = 0
@@ -665,9 +660,11 @@ class TopASNs(Prop):
 		size = self.size
 		self.labels = [asn for tot, asn in top][:size-1]
 		self.labels += ['Remaining']
-		self.prop = [ (('%s_%s' % (self.asn_small_type, asn)), None)
-		              for tot, asn in top][:size-1]
-		data_ts = list()
+		self.prop = [(f'{self.asn_small_type}_{asn}', None) for tot, asn in top][
+			: size - 1
+		]
+
+		data_ts = []
 		i = 0
 		for row in zip(*bands):
 			if n_resolvers[offset + i] == 0:
@@ -675,7 +672,7 @@ class TopASNs(Prop):
 				data_ts.append([0] * size)
 				continue
 			asn_dict = {}
-			top_row = list()
+			top_row = []
 			rem = 0
 			for total, ASNs in row:
 				if type(ASNs) is not str:
@@ -695,7 +692,7 @@ class TopASNs(Prop):
 			i += 1
 
 		data_ts = [list(ts) for ts in zip(*data_ts)]
-		self.pie_labels = [asn for asn in self.labels]
+		self.pie_labels = list(self.labels)
 		self.labels = [asn_label(asn) for asn in self.labels]
 		self.do_plot( dt_ts[offset:], data_ts
 			    , ind.path + '/' + self.col_name + '.svg' )
@@ -718,8 +715,10 @@ class TopECSMasks(Prop):
 		if af == '4': self.af = ''
 		self.labels = None
 		super(TopECSMasks, self).__init__(
-		    ('Top %sEDNS Client Subnet masks' % ('6' if af == 'IPv6 ' else '')),
-		    'ecs_masks'+af, 'ECS Masks'+af)
+			f"Top {'6' if af == 'IPv6 ' else ''}EDNS Client Subnet masks",
+			f'ecs_masks{af}',
+			f'ECS Masks{af}',
+		)
 
 	def labs(self):
 		return self.labels
@@ -736,11 +735,11 @@ class TopECSMasks(Prop):
 		if offset < 0:
 			return '';
 
-		ecs_totals = dict()
+		ecs_totals = {}
 		masks = [ zip( csv['ECS mask%s #%d'       % (self.af,mask)].values[offset:]
 		             , csv['ECS mask%s #%d count' % (self.af,mask)].values[offset:])
 		          for mask in range(1,10) ]
-		rem   = csv['Remaining ECS mask%s count' % self.af].values[offset:]
+		rem = csv[f'Remaining ECS mask{self.af} count'].values[offset:]
 		if self.af == '':
 			masks6 = [ zip( csv['ECS mask6 #%d' % mask].values[offset:]
 			              , csv['ECS mask6 #%d count' % mask].values[offset:])
@@ -748,7 +747,7 @@ class TopECSMasks(Prop):
 			rem6   = csv['Remaining ECS mask6 count'].values[offset:]
 			masks += masks6
 			rem    = [ r4 + r6 for r4, r6 in zip(rem, rem6) ]
-			
+
 		masks+= [zip([-1] * len(rem), rem)]
 		for mask_counts in masks:
 			i = 0
@@ -771,7 +770,7 @@ class TopECSMasks(Prop):
 		else:
 			self.labels = [ecs for tot, ecs in top][:size-1]
 			self.labels += ['Remaining']
-		data_ts = list()
+		data_ts = []
 		i = 0
 		for row in zip(*masks):
 			if n_resolvers[offset + i] == 0:
@@ -779,7 +778,7 @@ class TopECSMasks(Prop):
 				data_ts.append([0] * size)
 				continue
 			ecs_dict = dict(row)
-			top_row = list()
+			top_row = []
 			rem = 0
 			for j in range(len(self.labels)-1):
 				mask = self.labels[j]
@@ -790,8 +789,7 @@ class TopECSMasks(Prop):
 			i += 1
 
 		data_ts = [list(ts) for ts in zip(*data_ts)]
-		self.labels = [ '/' + str(l) if type(l) is not str else l
-		                for l in self.labels]
+		self.labels = [f'/{str(l)}' if type(l) is not str else l for l in self.labels]
 		self.do_plot( dt_ts[offset:], data_ts
 			    , ind.path + '/' + self.col_name + '.svg' )
 
@@ -875,7 +873,7 @@ def create_plots(fn):
 		        for iso_dt in csv['datetime'].values ]
 
 	path = '/'.join(fn.split('/')[:-1])
-	path = path if path else '.'
+	path = path or '.'
 	page = Index(path, 'DNSThought')
 	for prop in props:
 #for prop in [TopASNs   ('auth') , TopASNs   ('resolver') , TopASNs   ('probe')]:
@@ -891,9 +889,9 @@ if __name__ == '__main__':
 	t_t = 0
 	p_t = time.time()
 	if len(sys.argv) != 2:
-		print('usage: %s <report.csv>' % sys.argv[0])
+		print(f'usage: {sys.argv[0]} <report.csv>')
 		sys.exit(1)
-	
+
 	with open('/'.join(sys.argv[0].split('/')[:-1] + ['asns.cPickle'])) as o:
 		asns = cPickle.load(o)
 	with open('/'.join(sys.argv[0].split('/')[:-1] + ['hijacks.pcl'])) as o:

@@ -73,7 +73,7 @@ def fetch_msm_results(msm_id):
 if __name__ == '__main__':
 	http = urllib3.PoolManager( cert_reqs='CERT_REQUIRED'
 	                          , ca_certs=certifi.where())
-	results = dict()
+	results = {}
 
 	pool = threadpool.ThreadPool(len(argv) - 1)
 	for req in threadpool.makeRequests(fetch_msm_results, argv[1:]):

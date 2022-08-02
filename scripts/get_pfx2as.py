@@ -36,7 +36,7 @@ import requests
 from subprocess import call, check_output
 
 def get_pfx2as(rv_dir):
-	r = requests.get(rv_dir + 'pfx2as-creation.log')
+	r = requests.get(f'{rv_dir}pfx2as-creation.log')
 	assert r.status_code == 200
 	last = r.content.strip().split('\n')[-1].split()[-1]
 	fn = last.split('/')[-1]

@@ -53,10 +53,10 @@ with open('src/probes.c', 'w') as f:
 const probe probes[] = {
 """)
 	for prb_id, o in objects:
-		asn_v4    = o['asn_v4']    if o['asn_v4']    else -1
-		asn_v6    = o['asn_v6']    if o['asn_v6']    else -1
-		latitude  = o['latitude']  if o['latitude']  else 666
-		longitude = o['longitude'] if o['longitude'] else 666
+		asn_v4 = o['asn_v4'] or -1
+		asn_v6 = o['asn_v6'] or -1
+		latitude = o['latitude'] or 666
+		longitude = o['longitude'] or 666
 		cc_0      = o['country_code'][0] if o['country_code'] else '\\x00'
 		cc_1      = o['country_code'][1] if o['country_code'] else '\\x00'
 		if asn_v4 == -1 and asn_v6 == -1 \
